@@ -1,3 +1,4 @@
+<!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -37,9 +38,9 @@
                 <div class="timer-area">
                     <div class="input-group input-group-lg">
                         <span class="input-group-addon" id="sizing-addon2">Points: </span>
-                        <input type="text" class="form-control" aria-describedby="sizing-addon2" id="currentPoints" value="0" />
+                        <input type="text" class="form-control" aria-describedby="sizing-addon2" readonly id="currentPoints" value="0" />
                         <span class="input-group-addon" id="sizing-addon1">Time Left: </span>
-                        <input type="text" class="form-control" aria-describedby="sizing-addon1" id="timeLeftElement" value="" />
+                        <input type="text" class="form-control" aria-describedby="sizing-addon1" readonly id="timeLeftElement" value="" />
                     </div>
                 </div>
                 <div class="panel panel-default panel-primary main-area">
@@ -56,28 +57,36 @@
                 <h4 class="list-group-item active">
                     Your results:
                 </h4>
-                <ul class="list-group">
-                    <li class="list-group-item">
-                        <span class="badge">14</span>
-                        Cras justo odio
-                    </li>
-                    <li class="list-group-item">
-                        <span class="badge">14</span>
-                        Cras justo odio
-                    </li>
-                    <li class="list-group-item">
-                        <span class="badge">14</span>
-                        Cras justo odio
-                    </li>
-                    <li class="list-group-item">
-                        <span class="badge">14</span>
-                        Cras justo odio
-                    </li>
+                <ul class="list-group" id="gameResults">
                 </ul>
                 <div id="errorLogs" class="alert alert-danger"></div>
             </div>
         </div>
 
+    </div>
+</div>
+
+<div class="modal fade" id="saveResultModal" tabindex="-1" data-keyboard="false" data-backdrop="static" role="dialog" aria-labelledby="exampleModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h3 class="modal-title" id="exampleModalLabel">Game Over</h3>
+            </div>
+            <div class="modal-body">
+                <h4>Your score: <span id="gameResultScore"></span></h4>
+                <form>
+                    <div class="form-group">
+                        <label for="gamer-name" class="control-label">Name:</label>
+                        <input type="text" class="form-control" id="gamer-name">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" id="saveResultButton" class="btn btn-primary">Save Result</button>
+            </div>
+        </div>
     </div>
 </div>
 

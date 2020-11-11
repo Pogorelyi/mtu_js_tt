@@ -4,7 +4,11 @@ const log = (message) => {
 
 class MyLocalStorage {
     myStorage = window.localStorage;
-    storageKey = 'mySuperGameResults';
+    storageKey = 'default';
+
+    constructor(props) {
+        this.storageKey = props.storageKey
+    }
 
     add(item) {
         let allItems = this.getAll();
@@ -19,17 +23,50 @@ class MyLocalStorage {
 }
 
 class PlayButtons {
+    startButton = null;
+    stopButton = null;
+    saveResults = null;
+
+    constructor(props) {
+        this.startButton = props.startButton;
+        this.stopButton = props.stopButton;
+        this.saveResults = props.saveResults;
+    }
+    bindStartEvent(startMethod) {
+        if (typeof startMethod === 'function') {
+            this.startButton.on('click', startMethod);
+        }
+    }
+    bindStopEvent(stopMethod) {
+        if (typeof stopMethod === 'function') {
+            this.stopButton.on('click', stopMethod);
+        }
+    }
+    bindSaveResultEvent(saveMethod) {
+        if (typeof saveMethod === 'function') {
+            this.saveResults.on('click', saveMethod);
+        }
+    }
+
+    onStart() {
+        this.disableStartButton();
+        this.enableStopButton()
+    }
+    onFinish() {
+        this.enableStartButton();
+        this.disableStopButton();
+    }
     disableStartButton() {
-        $('#startGameButton').attr('disabled', 'disabled');
+        this.startButton.attr('disabled', 'disabled');
     }
     disableStopButton() {
-        $('#stopGameButton').attr('disabled', 'disabled');
+        this.stopButton.attr('disabled', 'disabled');
     }
     enableStopButton() {
-        $('#stopGameButton').attr('disabled', false);
+        this.stopButton.attr('disabled', false);
     }
     enableStartButton() {
-        $('#startGameButton').attr('disabled', false);
+        this.startButton.attr('disabled', false);
     }
 }
 
@@ -66,19 +103,29 @@ class MySuperGame {
     currentPoints = 0;
     gameLengthSeconds = 0;
     initRectCount = 0;
-    storage = new MyLocalStorage();
+    storage = new MyLocalStorage({storageKey: 'mySuperGameResults'});
     countDown = new CountDownComponent();
-    playButtons = new PlayButtons();
+    playButtons = null;
 
     constructor(props) {
         this.gameLengthSeconds = props.gameLengthSeconds;
         this.initRectCount = props.initRectCount;
+        this.initButtons(props.playButtons);
         this.renderTimeLeft(props.gameLengthSeconds);
         this.drawCurrentResults();
     }
+
+    initButtons(buttons) {
+        this.playButtons = buttons;
+        this.playButtons.bindStartEvent(this.startGame);
+        this.playButtons.bindStopEvent(this.finishGame);
+        this.playButtons.bindSaveResultEvent(this.saveResult);
+    }
+
     drawCurrentResults() {
         self = this;
         let maxDisplayResults = 10;
+        $('#gameResults').html('');
         this.storage.getAll().forEach(function(item, index){
             if (index < maxDisplayResults) {
                 self.appendResultItem(item.name, item.points);
@@ -96,6 +143,8 @@ class MySuperGame {
         let height = this.getRandomNumber(20);
         let top = this.getRandomNumber(100);
         let left = this.getRandomNumber(100);
+
+        // draw item only inside play area
         if (top + height > 100) {
             top -= (top + height) - 100;
         }
@@ -105,8 +154,8 @@ class MySuperGame {
         let self = this;
         jQuery('<div/>', {
             class: 'inner-rect',
-            style: 'width:'+width+'%;height:'+height+'%;background-color:'+this.getRandomColor()+';position:absolute;top:'+top+'%;left:'+left+'%;'
-        }).appendTo('#play-area').on('click', function() {
+            style: 'width:' + width + '%;height:' + height + '%;background-color:' + this.getRandomColor() + ';position:absolute;top:' + top + '%;left:' + left + '%;'
+        }).appendTo('#play-area').on('click', function () {
             self.incrPoints();
             $(this).fadeOut();
             if (self.isStarted) {
@@ -131,19 +180,25 @@ class MySuperGame {
     incrPoints() {
         this.renderCurrentPoints(++this.currentPoints);
     }
+    setPoints(value) {
+        this.currentPoints = parseInt(value);
+        this.renderCurrentPoints(this.currentPoints);
+    }
+    getPoints() {
+        return parseInt(this.currentPoints);
+    }
     renderCurrentPoints(value) {
         $("#currentPoints").val(value);
     }
 
-    startGame() {
+    startGame = () => {
         if (this.isStarted) {
             log('game already started');
             return false;
         }
-        this.currentPoints = 0;
-        this.renderCurrentPoints(0);
-        this.drawRectangles(this.initRectCount);
         this.isStarted = true;
+        this.setPoints(0);
+        this.drawRectangles(this.initRectCount);
         this.renderTimeLeft(this.gameLengthSeconds);
         this.countDown.start(
             this.gameLengthSeconds,
@@ -151,37 +206,39 @@ class MySuperGame {
             this.finishGame,
             this.iterationHandler
         );
-        this.playButtons.disableStartButton();
-        this.playButtons.enableStopButton();
-        log('Game started')
+        this.playButtons.onStart();
+        log('Game started');
     }
 
     finishGame = () => {
         log('Game finished');
-        $('.inner-rect').fadeOut();
+        this.hideAllRectangles();
         this.isStarted = false;
-        this.playButtons.enableStartButton();
-        this.playButtons.disableStopButton();
+        this.playButtons.onFinish();
         this.showSaveResultModal();
     };
 
+    hideAllRectangles() {
+        $('.inner-rect').fadeOut();
+    }
+
     showSaveResultModal() {
-        $('#gameResultScore').text(this.currentPoints);
+        $('#gameResultScore').text(this.getPoints());
         this.getResultModal().modal('show');
     }
 
-    saveResult() {
+    saveResult = () => {
         let name = $('#gamer-name').val();
         if (name) {
-            this.appendResultItem(name, this.currentPoints);
             this.getResultModal().modal('hide');
-            this.storage.add({name, points: this.currentPoints});
+            this.storage.add({name, points: this.getPoints()});
+            this.drawCurrentResults();
         }
     }
 
     appendResultItem(name, points) {
         $('#gameResults').append('<li class="list-group-item">' +
-            '<span class="badge">' + points + '</span>' + escape(name) + '</li>');
+            '<span class="badge">' + points + '</span>' + name + '</li>');
     }
 
     getResultModal() {
@@ -199,20 +256,16 @@ class MySuperGame {
     }
 }
 
-jQuery(document).ready(function(){
+jQuery(document).ready(function() {
+    const buttons = new PlayButtons({
+        startButton: $('#startGameButton'),
+        stopButton: $('#stopGameButton'),
+        saveResults: $('#saveResultButton'),
+    });
+
     const game = new MySuperGame( {
         gameLengthSeconds: 50,
-        initRectCount: 20
+        initRectCount: 20,
+        playButtons: buttons
     });
-
-    $('#startGameButton').on('click', function(){
-        game.startGame();
-    });
-    $('#stopGameButton').on('click', function(){
-        game.finishGame();
-    });
-
-    $('#saveResultButton').on('click', function(){
-        game.saveResult();
-    })
 });

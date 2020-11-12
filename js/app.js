@@ -6,8 +6,8 @@ class MyLocalStorage {
     myStorage = window.localStorage;
     storageKey = 'default';
 
-    constructor(props) {
-        this.storageKey = props.storageKey
+    constructor(storageKey) {
+        this.storageKey = storageKey;
     }
 
     add(item) {
@@ -47,7 +47,6 @@ class PlayButtons {
             this.saveResults.on('click', saveMethod);
         }
     }
-
     onStart() {
         this.disableStartButton();
         this.enableStopButton()
@@ -56,18 +55,10 @@ class PlayButtons {
         this.enableStartButton();
         this.disableStopButton();
     }
-    disableStartButton() {
-        this.startButton.attr('disabled', 'disabled');
-    }
-    disableStopButton() {
-        this.stopButton.attr('disabled', 'disabled');
-    }
-    enableStopButton() {
-        this.stopButton.attr('disabled', false);
-    }
-    enableStartButton() {
-        this.startButton.attr('disabled', false);
-    }
+    disableStartButton = () => this.startButton.attr('disabled', 'disabled');
+    disableStopButton = () =>  this.stopButton.attr('disabled', 'disabled');
+    enableStopButton = () => this.stopButton.attr('disabled', false);
+    enableStartButton = () => this.startButton.attr('disabled', false);
 }
 
 class CountDownComponent {
@@ -100,18 +91,18 @@ class CountDownComponent {
 
 class MySuperGame {
     isStarted = false;
-    currentPoints = 0;
+    _currentPoints = 0;
     gameLengthSeconds = 0;
     initRectCount = 0;
-    storage = new MyLocalStorage({storageKey: 'mySuperGameResults'});
+    storage = new MyLocalStorage('mySuperGameResults');
     countDown = new CountDownComponent();
     playButtons = null;
 
-    constructor(props) {
-        this.gameLengthSeconds = props.gameLengthSeconds;
-        this.initRectCount = props.initRectCount;
-        this.initButtons(props.playButtons);
-        this.renderTimeLeft(props.gameLengthSeconds);
+    constructor(gameLengthSeconds, initRectCount, playButtons) {
+        this.gameLengthSeconds = gameLengthSeconds;
+        this.initRectCount = initRectCount;
+        this.initButtons(playButtons);
+        this.renderTimeLeft(gameLengthSeconds);
         this.drawCurrentResults();
     }
 
@@ -126,7 +117,7 @@ class MySuperGame {
         self = this;
         let maxDisplayResults = 10;
         $('#gameResults').html('');
-        this.storage.getAll().forEach(function(item, index){
+        this.storage.getAll().reverse().forEach(function(item, index) {
             if (index < maxDisplayResults) {
                 self.appendResultItem(item.name, item.points);
             }
@@ -180,16 +171,17 @@ class MySuperGame {
     incrPoints() {
         this.renderCurrentPoints(++this.currentPoints);
     }
-    setPoints(value) {
-        this.currentPoints = parseInt(value);
-        this.renderCurrentPoints(this.currentPoints);
+
+    set currentPoints(value) {
+        this._currentPoints = parseInt(value);
+        this.renderCurrentPoints(this._currentPoints);
     }
-    getPoints() {
-        return parseInt(this.currentPoints);
+
+    get currentPoints() {
+        return parseInt(this._currentPoints);
     }
-    renderCurrentPoints(value) {
-        $("#currentPoints").val(value);
-    }
+
+    renderCurrentPoints = (value) => $("#currentPoints").val(value);
 
     startGame = () => {
         if (this.isStarted) {
@@ -197,17 +189,21 @@ class MySuperGame {
             return false;
         }
         this.isStarted = true;
-        this.setPoints(0);
+        this.currentPoints = 0;
         this.drawRectangles(this.initRectCount);
         this.renderTimeLeft(this.gameLengthSeconds);
+        this.startCountDown();
+        this.playButtons.onStart();
+        log('Game started');
+    };
+
+    startCountDown() {
         this.countDown.start(
             this.gameLengthSeconds,
             this.renderTimeLeft,
             this.finishGame,
             this.iterationHandler
         );
-        this.playButtons.onStart();
-        log('Game started');
     }
 
     finishGame = () => {
@@ -218,12 +214,10 @@ class MySuperGame {
         this.showSaveResultModal();
     };
 
-    hideAllRectangles() {
-        $('.inner-rect').fadeOut();
-    }
+    hideAllRectangles = () => $('.inner-rect').fadeOut();
 
     showSaveResultModal() {
-        $('#gameResultScore').text(this.getPoints());
+        $('#gameResultScore').text(this.currentPoints);
         this.getResultModal().modal('show');
     }
 
@@ -231,10 +225,10 @@ class MySuperGame {
         let name = $('#gamer-name').val();
         if (name) {
             this.getResultModal().modal('hide');
-            this.storage.add({name, points: this.getPoints()});
+            this.storage.add({name, points: this.currentPoints});
             this.drawCurrentResults();
         }
-    }
+    };
 
     appendResultItem(name, points) {
         $('#gameResults').append('<li class="list-group-item">' +
@@ -251,9 +245,7 @@ class MySuperGame {
         }
     };
 
-    renderTimeLeft = (timeLeft) => {
-        $('#timeLeftElement').val(timeLeft);
-    }
+    renderTimeLeft = (timeLeft) => $('#timeLeftElement').val(timeLeft);
 }
 
 jQuery(document).ready(function() {
@@ -263,9 +255,5 @@ jQuery(document).ready(function() {
         saveResults: $('#saveResultButton'),
     });
 
-    const game = new MySuperGame( {
-        gameLengthSeconds: 50,
-        initRectCount: 20,
-        playButtons: buttons
-    });
+    const game = new MySuperGame(50, 20, buttons);
 });

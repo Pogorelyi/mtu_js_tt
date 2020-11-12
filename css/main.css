@@ -14,3 +14,9 @@ html, body { height: 100% }
 #gameResults {
     overflow: hidden;
 }
+.navbar-my {
+    margin:0!important;
+}
+.jumbotron {
+    padding-top: 0;
+}
